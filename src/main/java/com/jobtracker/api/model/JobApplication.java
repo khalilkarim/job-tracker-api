@@ -15,7 +15,7 @@ public class JobApplication {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private Long user;
+    private User user;
 
     @Column(name = "job_title", nullable = false)
     private String jobTitle;
