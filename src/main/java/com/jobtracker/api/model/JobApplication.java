@@ -2,6 +2,8 @@ package com.jobtracker.api.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,6 +18,9 @@ public class JobApplication {
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Column(name = "notes", nullable = true)
+    private String notes;
 
     @Column(name = "job_title", nullable = false)
     private String jobTitle;
@@ -33,7 +38,7 @@ public class JobApplication {
     private LocalDateTime updatedAt;
 
     @Column(name = "applied_at", nullable = false)
-    private LocalDateTime appliedDate;
+    private LocalDate appliedDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
