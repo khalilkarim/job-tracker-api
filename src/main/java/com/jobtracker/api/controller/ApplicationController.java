@@ -1,8 +1,11 @@
 package com.jobtracker.api.controller;
 
+import com.jobtracker.api.dto.AiAnalysisResponse;
 import com.jobtracker.api.dto.ApplicationRequest;
 import com.jobtracker.api.dto.ApplicationResponse;
 import com.jobtracker.api.model.ApplicationStatus;
+import com.jobtracker.api.model.JobApplication;
+import com.jobtracker.api.service.AnalysisService;
 import com.jobtracker.api.service.ApplicationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,9 @@ public class ApplicationController {
 
     @Autowired
     ApplicationService applicationService;
+
+    @Autowired
+    AnalysisService analysisService;
 
     @PostMapping
     public ResponseEntity<ApplicationResponse> createApplication(
@@ -75,6 +81,16 @@ public class ApplicationController {
         applicationService.deleteApplication(email, id);
 
         return ResponseEntity.noContent().build();
+
+    }
+
+    @PostMapping("/{id}/analyze")
+    ResponseEntity<AiAnalysisResponse> analyzeApplication(
+            @AuthenticationPrincipal UserDetails userDetails, @PathVariable Long id) {
+        String email = userDetails.getUsername();
+
+        return ResponseEntity.ok(analysisService.analyzeApplication(email, id));
+
 
     }
 }
