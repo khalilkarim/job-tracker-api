@@ -87,7 +87,7 @@ public class ApplicationService {
             String email, Long applicationId, ApplicationRequest request) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        JobApplication application = jobApplicationRepository.findById(user.getId())
+        JobApplication application = jobApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
         if (!application.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Unauthorized");
