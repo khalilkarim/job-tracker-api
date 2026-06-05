@@ -1,5 +1,6 @@
 package com.jobtracker.api.service;
 
+import com.jobtracker.api.dto.ApplicationRequest;
 import com.jobtracker.api.dto.AuthResponse;
 import com.jobtracker.api.dto.LoginRequest;
 import com.jobtracker.api.dto.RegisterRequest;
@@ -8,6 +9,7 @@ import com.jobtracker.api.exception.ResourceNotFoundException;
 import com.jobtracker.api.model.User;
 import com.jobtracker.api.repository.UserRepository;
 import com.jobtracker.api.security.JwtService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -44,25 +46,41 @@ public class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
+    private RegisterRequest registerRequest;
+    private LoginRequest loginRequest;
+    private User user;
+
+    @BeforeEach
+    public void setup() {
+        registerRequest = new RegisterRequest();
+        registerRequest.setName("Johnny Bravo");
+        registerRequest.setEmail("johnnyb@gmail.com");
+        registerRequest.setPassword("secret123");
+
+        loginRequest = new LoginRequest();
+        loginRequest.setEmail("johnnyb@gmail.com");
+        loginRequest.setPassword("secret123");
+
+        user = new User();
+        user.setEmail("johnnyb@gmail.com");
+        user.setName("Johnny Bravo");
+
+    }
+
     //REGISTER TESTS
 
     @Test
     public void register_withNewEmail_returnsAuthResponse() {
-        RegisterRequest request = new RegisterRequest();
-        request.setName("Johnny Bravo");
-        request.setEmail("johnnyb@gmail.com");
-        request.setPassword("secret123");
-
-        when(userService.validateEmailNotTaken(request.getEmail()))
+        when(userService.validateEmailNotTaken(registerRequest.getEmail()))
                 .thenReturn(false);
-        when(passwordEncoder.encode(request.getPassword()))
+        when(passwordEncoder.encode(registerRequest.getPassword()))
                 .thenReturn("hashedPassword");
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtService.generateToken("johnnyb@gmail.com"))
                 .thenReturn("jwt-token");
 
-        AuthResponse response = authService.register(request);
+        AuthResponse response = authService.register(registerRequest);
 
         assertNotNull(response);
         assertEquals("jwt-token", response.getToken());
@@ -73,17 +91,12 @@ public class AuthServiceTest {
 
     @Test
     public void register_withExistingEmail_throwsException() {
-        RegisterRequest request = new RegisterRequest();
-        request.setName("Johnny Bravo");
-        request.setEmail("johnnyb@gmail.com");
-        request.setPassword("secret123");
-
-        when(userService.validateEmailNotTaken(request.getEmail()))
+        when(userService.validateEmailNotTaken(registerRequest.getEmail()))
                 .thenThrow(new EmailAlreadyExistsException("Email already registered"));
 
         RuntimeException exception = assertThrows(
                 EmailAlreadyExistsException.class,
-                () -> authService.register(request)
+                () -> authService.register(registerRequest)
         );
 
         assertEquals("Email already registered", exception.getMessage());
@@ -95,15 +108,6 @@ public class AuthServiceTest {
 
     @Test
     public void login_WithValidCredentials_returnsAuthResponse() {
-        LoginRequest request = new LoginRequest();
-        request.setEmail("johnnyb@gmail.com");
-        request.setPassword("secret123");
-
-        User user = new User();
-        user.setEmail("johnnyb@gmail.com");
-        user.setName("Johnny Bravo");
-
-
         when(authenticationManager.authenticate(any()))
                 .thenReturn(null);
         when(userService.findByEmail("johnnyb@gmail.com"))
@@ -111,7 +115,7 @@ public class AuthServiceTest {
         when(jwtService.generateToken("johnnyb@gmail.com"))
                 .thenReturn("jwt-token");
 
-        AuthResponse response = authService.login(request);
+        AuthResponse response = authService.login(loginRequest);
         assertNotNull(response);
         assertEquals("jwt-token", response.getToken());
         assertEquals("johnnyb@gmail.com", response.getEmail());
@@ -119,25 +123,17 @@ public class AuthServiceTest {
 
     @Test
     public void login_withInvalidCredentials_throwsException() {
-        LoginRequest request = new LoginRequest();
-        request.setEmail("johnnyb@gmail.com");
-        request.setPassword("secret123");
-
         when(authenticationManager.authenticate(any()))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
 
         assertThrows(BadCredentialsException.class,
-                () -> authService.login(request));
+                () -> authService.login(loginRequest));
 
         verify(jwtService, never()).generateToken(anyString());
     }
 
     @Test
     public void login_withNonExistentEmail_throwsException() {
-        LoginRequest request = new LoginRequest();
-        request.setEmail("johnnyb@gmail.com");
-        request.setPassword("secret123");
-
         when(authenticationManager.authenticate(any()))
                 .thenReturn(null);
         when(userService.findByEmail("johnnyb@gmail.com"))
@@ -145,7 +141,7 @@ public class AuthServiceTest {
 
         RuntimeException exception = assertThrows(
                 ResourceNotFoundException.class,
-                () -> authService.login(request)
+                () -> authService.login(loginRequest)
         );
 
         assertEquals("User not found", exception.getMessage());

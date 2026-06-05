@@ -49,17 +49,13 @@ public class ApplicationService {
 
     public ApplicationResponse getApplication(String email, Long applicationId) {
         User user = userService.findByEmail(email);
-        JobApplication application = jobApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
-        if (!application.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized");
-        }
+        JobApplication application = findAndValidateOwnership(user, applicationId);
 
         return applicationMapper.toResponse(application);
     }
 
     public List<ApplicationResponse> getApplications(String email) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.findByEmail(email);
        List<JobApplication> applications = jobApplicationRepository.findByUserId(user.getId());
 
        return applicationMapper.toResponseList(applications);
@@ -68,12 +64,7 @@ public class ApplicationService {
     public ApplicationResponse updateStatus(String email, Long applicationId, ApplicationStatus status) {
         User user = userService.findByEmail(email);
 
-        JobApplication application = jobApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
-
-        if (!application.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized");
-        }
+        JobApplication application = findAndValidateOwnership(user, applicationId);
 
         application.setStatus(status);
 
@@ -87,11 +78,7 @@ public class ApplicationService {
     public ApplicationResponse updateApplication(
             String email, Long applicationId, ApplicationRequest request) {
         User user = userService.findByEmail(email);
-        JobApplication application = jobApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
-        if (!application.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized");
-        }
+        JobApplication application = findAndValidateOwnership(user, applicationId);
         application.setJobDescription(request.getJobDescription());
         application.setJobTitle(request.getJobTitle());
         application.setNotes(request.getNotes());

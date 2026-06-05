@@ -3,11 +3,13 @@ package com.jobtracker.api.service;
 import com.jobtracker.api.dto.ApplicationRequest;
 import com.jobtracker.api.dto.ApplicationResponse;
 import com.jobtracker.api.exception.ResourceNotFoundException;
+import com.jobtracker.api.exception.UnauthorizedException;
 import com.jobtracker.api.mapper.ApplicationMapper;
 import com.jobtracker.api.model.ApplicationStatus;
 import com.jobtracker.api.model.JobApplication;
 import com.jobtracker.api.model.User;
 import com.jobtracker.api.repository.JobApplicationRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,21 +38,29 @@ public class ApplicationServiceTest {
     @InjectMocks
     ApplicationService applicationService;
 
-    @Test
-    public void  createApplication_withValidEmail_returnsApplicationResponse() {
+    private User user;
+    private JobApplication application;
+    private ApplicationRequest request;
+    private ApplicationResponse expectedResponse;
+    private Long applicationId;
+    private  User wrongUser;
 
-        ApplicationRequest request = new ApplicationRequest();
+    @BeforeEach
+    public void setup() {
+        user = new User();
+        user.setId(1l);
+        user.setEmail("johnnyb@gmail.com");
+        user.setName("Johnny Bravo");
+        user.setPassword("secret123");
+
+        request = new ApplicationRequest();
         request.setCompanyName("Google");
         request.setJobDescription("Backend Engineer");
         request.setNotes("notes");
         request.setJobTitle("Software Engineer");
         request.setAppliedDate(LocalDate.of(2024, 1, 15));
 
-        User user = new User();
-        user.setEmail("johnnyb@gmail.com");
-        user.setName("Johnny Bravo");
-
-        JobApplication application = new JobApplication();
+        application = new JobApplication();
         application.setUser(user);
         application.setCompanyName(request.getCompanyName());
         application.setStatus(ApplicationStatus.APPLIED);
@@ -61,7 +71,7 @@ public class ApplicationServiceTest {
         application.setCreatedAt(LocalDateTime.now());
         application.setCreatedAt(LocalDateTime.now());
 
-        ApplicationResponse expectedResponse = new ApplicationResponse();
+        expectedResponse = new ApplicationResponse();
         expectedResponse.setId(1L);
         expectedResponse.setCompanyName(application.getCompanyName());
         expectedResponse.setCreatedAt(application.getCreatedAt());
@@ -71,6 +81,22 @@ public class ApplicationServiceTest {
         expectedResponse.setNotes(application.getNotes());
         expectedResponse.setStatus(application.getStatus());
         expectedResponse.setUpdatedAt(application.getUpdatedAt());
+
+        wrongUser = new User();
+        wrongUser.setName("Jim Jones");
+        wrongUser.setEmail("jim@gmail.com");
+        wrongUser.setId(2L);
+
+        applicationId = 1L;
+
+
+
+
+
+    }
+
+    @Test
+    public void  createApplication_withValidEmail_returnsApplicationResponse() {
 
         when(userService.findByEmail("johnnyb@gmail.com"))
                 .thenReturn(user);
@@ -91,17 +117,6 @@ public class ApplicationServiceTest {
 
     @Test
     public void createApplication_withInvalidEmail_throwsException() {
-
-        ApplicationRequest request = new ApplicationRequest();
-        request.setCompanyName("Google");
-        request.setJobDescription("Backend Engineer");
-        request.setNotes("notes");
-        request.setJobTitle("Software Engineer");
-        request.setAppliedDate(LocalDate.of(2024, 1, 15));
-
-        User user = new User();
-        user.setEmail("johnnyb@gmail.com");
-        user.setPassword("secret123");
         when(userService.findByEmail(user.getEmail()))
                 .thenThrow(new ResourceNotFoundException("User not found"));
 
@@ -115,42 +130,6 @@ public class ApplicationServiceTest {
 
     @Test
     public void getApplication_withValidUserAndApplicationId_returnResponse() {
-        Long applicationId = 1l;
-        ApplicationRequest request = new ApplicationRequest();
-        request.setCompanyName("Google");
-        request.setJobDescription("Backend Engineer");
-        request.setNotes("notes");
-        request.setJobTitle("Software Engineer");
-        request.setAppliedDate(LocalDate.of(2024, 1, 15));
-
-        User user = new User();
-        user.setEmail("johnnyb@gmail.com");
-        user.setName("Johnny Bravo");
-        user.setId(1L);
-
-        JobApplication application = new JobApplication();
-        application.setId(applicationId);
-        application.setUser(user);
-        application.setCompanyName(request.getCompanyName());
-        application.setStatus(ApplicationStatus.APPLIED);
-        application.setJobTitle(request.getJobTitle());
-        application.setNotes(request.getNotes());
-        application.setJobDescription(request.getJobDescription());
-        application.setAppliedDate(request.getAppliedDate());
-        application.setCreatedAt(LocalDateTime.now());
-        application.setCreatedAt(LocalDateTime.now());
-
-        ApplicationResponse expectedResponse = new ApplicationResponse();
-        expectedResponse.setId(application.getId());
-        expectedResponse.setCompanyName(application.getCompanyName());
-        expectedResponse.setCreatedAt(application.getCreatedAt());
-        expectedResponse.setAppliedDate(application.getAppliedDate());
-        expectedResponse.setJobTitle(application.getJobTitle());
-        expectedResponse.setJobDescription(application.getJobDescription());
-        expectedResponse.setNotes(application.getNotes());
-        expectedResponse.setStatus(application.getStatus());
-        expectedResponse.setUpdatedAt(application.getUpdatedAt());
-
         when(userService.findByEmail("johnnyb@gmail.com"))
                 .thenReturn(user);
         when(jobApplicationRepository.findById(1L))
@@ -176,7 +155,6 @@ public class ApplicationServiceTest {
 
     @Test
     public void getApplication_withInvalidUser_throwsException() {
-        Long applicationId = 1l;
 
         when(userService.findByEmail("johnnyb@gmail.com"))
                 .thenThrow(new ResourceNotFoundException("User not found"));
@@ -192,39 +170,14 @@ public class ApplicationServiceTest {
 
     @Test
     public void getApplication_withUnauthorizedUser_throwsException() {
-        Long applicationId = 1l;
-
-        User user = new User();
-        user.setEmail("johnnyb@gmail.com");
-        user.setName("Johnny Bravo");
-        user.setId(1L);
-
-        User wrongUser = new User();
-        wrongUser.setName("Jim Jones");
-        wrongUser.setEmail("jim@gmail.com");
-        wrongUser.setId(2L);
-
-        JobApplication application = new JobApplication();
-        application.setId(applicationId);
-        application.setUser(wrongUser);
-        application.setCompanyName("Google");
-        application.setStatus(ApplicationStatus.APPLIED);
-        application.setJobTitle("Software Engineer");
-        application.setNotes("notes");
-        application.setJobDescription("Backend Engineer");
-        application.setAppliedDate(LocalDate.of(2024, 1, 15));
-        application.setCreatedAt(LocalDateTime.now());
-        application.setCreatedAt(LocalDateTime.now());
-
-
         when(userService.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(user);
+                .thenReturn(wrongUser);
         when(jobApplicationRepository.findById(applicationId))
                 .thenReturn(Optional.of(application));
 
 
         RuntimeException exception = assertThrows(
-                RuntimeException.class,
+                UnauthorizedException.class,
                 () -> applicationService.getApplication(user.getEmail(), applicationId)
         );
 
@@ -235,26 +188,6 @@ public class ApplicationServiceTest {
 
     @Test
     public void deleteApplication_WithValidUser_deleteSuccessfully() {
-        Long applicationId = 1l;
-
-        User user = new User();
-        user.setEmail("johnnyb@gmail.com");
-        user.setName("Johnny Bravo");
-        user.setId(1L);
-
-
-        JobApplication application = new JobApplication();
-        application.setId(applicationId);
-        application.setUser(user);
-        application.setCompanyName("Google");
-        application.setStatus(ApplicationStatus.APPLIED);
-        application.setJobTitle("Software Engineer");
-        application.setNotes("notes");
-        application.setJobDescription("Backend Engineer");
-        application.setAppliedDate(LocalDate.of(2024, 1, 15));
-        application.setCreatedAt(LocalDateTime.now());
-        application.setCreatedAt(LocalDateTime.now());
-
         when(userService.findByEmail(user.getEmail()))
                 .thenReturn(user);
         when(jobApplicationRepository.findById(applicationId))
@@ -268,7 +201,6 @@ public class ApplicationServiceTest {
 
     @Test
     public void deleteApplication_withInvalidUser_throwsException() {
-        Long applicationId = 1l;
 
         when(userService.findByEmail("johnnyb@gmail.com"))
                 .thenThrow(new ResourceNotFoundException("User not found"));

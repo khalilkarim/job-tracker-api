@@ -5,21 +5,17 @@ import com.jobtracker.api.exception.ResourceNotFoundException;
 import com.jobtracker.api.model.ApplicationStatus;
 import com.jobtracker.api.model.User;
 import com.jobtracker.api.repository.JobApplicationRepository;
-import com.jobtracker.api.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class DashboardServiceTest {
-
-    @Mock
-    private ApplicationService applicationService;
 
     @Mock
     JobApplicationRepository applicationRepository;
@@ -30,12 +26,17 @@ public class DashboardServiceTest {
     @InjectMocks
     private DashboardService dashboardService;
 
-    @Test
-    public void getDashboard_withValidUser_returnsDashboardResponse() {
-        User user = new User();
+    private User user;
+
+    @BeforeEach
+    public void setup() {
+        user = new User();
         user.setId(1L);
         user.setEmail("johnnyb@gmail.com");
+    }
 
+    @Test
+    public void getDashboard_withValidUser_returnsDashboardResponse() {
         when(userService.findByEmail("johnnyb@gmail.com"))
                 .thenReturn(user);
         when(applicationRepository.countByUserId(1L))
@@ -62,10 +63,6 @@ public class DashboardServiceTest {
 
     @Test
     public void getDashboard_withNoApplications_returnsZeroSuccessRate() {
-        User user = new User();
-        user.setId(1L);
-        user.setEmail("johnnyb@gmail.com");
-
         when(userService.findByEmail("johnnyb@gmail.com"))
                 .thenReturn(user);
         when(applicationRepository.countByUserId(1L))
