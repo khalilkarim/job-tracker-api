@@ -2,6 +2,8 @@ package com.jobtracker.api.service;
 
 import com.jobtracker.api.dto.ApplicationRequest;
 import com.jobtracker.api.dto.ApplicationResponse;
+import com.jobtracker.api.exception.ResourceNotFoundException;
+import com.jobtracker.api.exception.UnauthorizedException;
 import com.jobtracker.api.mapper.ApplicationMapper;
 import com.jobtracker.api.model.ApplicationStatus;
 import com.jobtracker.api.model.JobApplication;
@@ -9,7 +11,6 @@ import com.jobtracker.api.model.User;
 import com.jobtracker.api.repository.JobApplicationRepository;
 import com.jobtracker.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,17 +18,19 @@ import java.util.List;
 @Service
 public class ApplicationService {
     @Autowired
-    JobApplicationRepository jobApplicationRepository;
+    private JobApplicationRepository jobApplicationRepository;
 
     @Autowired
-    ApplicationMapper applicationMapper;
+    private ApplicationMapper applicationMapper;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
+
+    @Autowired
+    private UserService userService;
 
     public ApplicationResponse createApplication(String email, ApplicationRequest request) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.findByEmail(email);
 
         JobApplication application = new JobApplication();
         application.setUser(user);
@@ -45,8 +48,7 @@ public class ApplicationService {
     }
 
     public ApplicationResponse getApplication(String email, Long applicationId) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.findByEmail(email);
         JobApplication application = jobApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
         if (!application.getUser().getId().equals(user.getId())) {
@@ -64,8 +66,7 @@ public class ApplicationService {
     }
 
     public ApplicationResponse updateStatus(String email, Long applicationId, ApplicationStatus status) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.findByEmail(email);
 
         JobApplication application = jobApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
@@ -85,8 +86,7 @@ public class ApplicationService {
 
     public ApplicationResponse updateApplication(
             String email, Long applicationId, ApplicationRequest request) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.findByEmail(email);
         JobApplication application = jobApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
         if (!application.getUser().getId().equals(user.getId())) {
@@ -104,8 +104,7 @@ public class ApplicationService {
         }
 
         public void deleteApplication(String email, Long applicationId) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.findByEmail(email);
         JobApplication application = jobApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
         if (!application.getUser().getId().equals(user.getId())) {
@@ -113,6 +112,22 @@ public class ApplicationService {
         }
 
         jobApplicationRepository.delete(application);
+
+        }
+
+        public JobApplication getApplicationEntity(String email, Long applicationId) {
+        User user = userService.findByEmail(email);
+        return findAndValidateOwnership(user, applicationId);
+
+    }
+
+        private JobApplication findAndValidateOwnership(User user, Long applicationId) {
+        JobApplication application = jobApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+         if (!application.getUser().getId().equals(user.getId())) {
+             throw new UnauthorizedException("Unauthorized");
+         }
+         return application;
 
         }
 

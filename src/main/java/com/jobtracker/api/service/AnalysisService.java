@@ -3,32 +3,25 @@ package com.jobtracker.api.service;
 import com.jobtracker.api.dto.AiAnalysisResponse;
 import com.jobtracker.api.model.JobApplication;
 import com.jobtracker.api.model.User;
-import com.jobtracker.api.repository.JobApplicationRepository;
-import com.jobtracker.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AnalysisService {
-    @Autowired
-    private JobApplicationRepository jobApplicationRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
+
+    @Autowired
+    private ApplicationService applicationService;
 
     @Autowired
     private GeminiService geminiService;
 
     public AiAnalysisResponse analyzeApplication(String email, Long applicationId) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.findByEmail(email);
 
-        JobApplication application = jobApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
-
-        if (!application.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized");
-        }
+       JobApplication application = applicationService.getApplicationEntity(email, applicationId);
 
         if (application.getJobDescription() == null || application.getJobDescription().isEmpty()) {
             throw new RuntimeException("No job description found for this application");

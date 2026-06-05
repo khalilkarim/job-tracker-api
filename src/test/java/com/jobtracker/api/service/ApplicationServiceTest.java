@@ -2,12 +2,12 @@ package com.jobtracker.api.service;
 
 import com.jobtracker.api.dto.ApplicationRequest;
 import com.jobtracker.api.dto.ApplicationResponse;
+import com.jobtracker.api.exception.ResourceNotFoundException;
 import com.jobtracker.api.mapper.ApplicationMapper;
 import com.jobtracker.api.model.ApplicationStatus;
 import com.jobtracker.api.model.JobApplication;
 import com.jobtracker.api.model.User;
 import com.jobtracker.api.repository.JobApplicationRepository;
-import com.jobtracker.api.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,10 +28,10 @@ public class ApplicationServiceTest {
     JobApplicationRepository jobApplicationRepository;
 
     @Mock
-    ApplicationMapper applicationMapper;
+    UserService userService;
 
     @Mock
-    UserRepository userRepository;
+    ApplicationMapper applicationMapper;
 
     @InjectMocks
     ApplicationService applicationService;
@@ -72,8 +72,8 @@ public class ApplicationServiceTest {
         expectedResponse.setStatus(application.getStatus());
         expectedResponse.setUpdatedAt(application.getUpdatedAt());
 
-        when(userRepository.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(Optional.of(user));
+        when(userService.findByEmail("johnnyb@gmail.com"))
+                .thenReturn(user);
         when(jobApplicationRepository.save(any(JobApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(applicationMapper.toResponse(any(JobApplication.class)))
@@ -102,10 +102,10 @@ public class ApplicationServiceTest {
         User user = new User();
         user.setEmail("johnnyb@gmail.com");
         user.setPassword("secret123");
-        when(userRepository.findByEmail(user.getEmail()))
-                .thenThrow(new RuntimeException("User not found"));
+        when(userService.findByEmail(user.getEmail()))
+                .thenThrow(new ResourceNotFoundException("User not found"));
 
-        assertThrows(RuntimeException.class, () ->
+        assertThrows(ResourceNotFoundException.class, () ->
                 applicationService.createApplication(user.getEmail(), request));
 
         verify(jobApplicationRepository, never()).save(any(JobApplication.class));
@@ -151,8 +151,8 @@ public class ApplicationServiceTest {
         expectedResponse.setStatus(application.getStatus());
         expectedResponse.setUpdatedAt(application.getUpdatedAt());
 
-        when(userRepository.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(Optional.of(user));
+        when(userService.findByEmail("johnnyb@gmail.com"))
+                .thenReturn(user);
         when(jobApplicationRepository.findById(1L))
                 .thenReturn(Optional.of(application));
         when(applicationMapper.toResponse(any(JobApplication.class)))
@@ -178,11 +178,11 @@ public class ApplicationServiceTest {
     public void getApplication_withInvalidUser_throwsException() {
         Long applicationId = 1l;
 
-        when(userRepository.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(Optional.empty());
+        when(userService.findByEmail("johnnyb@gmail.com"))
+                .thenThrow(new ResourceNotFoundException("User not found"));
 
         RuntimeException exception = assertThrows(
-                RuntimeException.class,
+                ResourceNotFoundException.class,
                 () -> applicationService.getApplication("johnnyb@gmail.com", applicationId)
         );
 
@@ -217,8 +217,8 @@ public class ApplicationServiceTest {
         application.setCreatedAt(LocalDateTime.now());
 
 
-        when(userRepository.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(Optional.of(user));
+        when(userService.findByEmail("johnnyb@gmail.com"))
+                .thenReturn(user);
         when(jobApplicationRepository.findById(applicationId))
                 .thenReturn(Optional.of(application));
 
@@ -255,8 +255,8 @@ public class ApplicationServiceTest {
         application.setCreatedAt(LocalDateTime.now());
         application.setCreatedAt(LocalDateTime.now());
 
-        when(userRepository.findByEmail(user.getEmail()))
-                .thenReturn(Optional.of(user));
+        when(userService.findByEmail(user.getEmail()))
+                .thenReturn(user);
         when(jobApplicationRepository.findById(applicationId))
                 .thenReturn(Optional.of(application));
 
@@ -270,11 +270,11 @@ public class ApplicationServiceTest {
     public void deleteApplication_withInvalidUser_throwsException() {
         Long applicationId = 1l;
 
-        when(userRepository.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(Optional.empty());
+        when(userService.findByEmail("johnnyb@gmail.com"))
+                .thenThrow(new ResourceNotFoundException("User not found"));
 
         RuntimeException exception = assertThrows(
-                RuntimeException.class,
+                ResourceNotFoundException.class,
                 () -> applicationService.deleteApplication("johnnyb@gmail.com", applicationId)
         );
 

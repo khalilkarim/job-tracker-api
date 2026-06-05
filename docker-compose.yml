@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: mysql:8.0
+    container_name: job-tracker-db
+    environment:
+      MYSQL_DATABASE: job_tracker
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: job-tracker-app
+    ports:
+      - "8080:8080"
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/job_tracker
+      SPRING_DATASOURCE_USERNAME: root
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql-data:

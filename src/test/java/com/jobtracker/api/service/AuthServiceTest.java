@@ -3,6 +3,8 @@ package com.jobtracker.api.service;
 import com.jobtracker.api.dto.AuthResponse;
 import com.jobtracker.api.dto.LoginRequest;
 import com.jobtracker.api.dto.RegisterRequest;
+import com.jobtracker.api.exception.EmailAlreadyExistsException;
+import com.jobtracker.api.exception.ResourceNotFoundException;
 import com.jobtracker.api.model.User;
 import com.jobtracker.api.repository.UserRepository;
 import com.jobtracker.api.security.JwtService;
@@ -25,7 +27,10 @@ import static org.mockito.Mockito.*;
 public class AuthServiceTest {
 
     @Mock
-    private UserRepository userRepository;
+    private UserService userService;
+
+    @Mock
+    UserRepository userRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -48,7 +53,7 @@ public class AuthServiceTest {
         request.setEmail("johnnyb@gmail.com");
         request.setPassword("secret123");
 
-        when(userRepository.existsByEmail(request.getEmail()))
+        when(userService.validateEmailNotTaken(request.getEmail()))
                 .thenReturn(false);
         when(passwordEncoder.encode(request.getPassword()))
                 .thenReturn("hashedPassword");
@@ -73,11 +78,11 @@ public class AuthServiceTest {
         request.setEmail("johnnyb@gmail.com");
         request.setPassword("secret123");
 
-        when(userRepository.existsByEmail(request.getEmail()))
-                .thenReturn(true);
+        when(userService.validateEmailNotTaken(request.getEmail()))
+                .thenThrow(new EmailAlreadyExistsException("Email already registered"));
 
         RuntimeException exception = assertThrows(
-                RuntimeException.class,
+                EmailAlreadyExistsException.class,
                 () -> authService.register(request)
         );
 
@@ -101,8 +106,8 @@ public class AuthServiceTest {
 
         when(authenticationManager.authenticate(any()))
                 .thenReturn(null);
-        when(userRepository.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(Optional.of(user));
+        when(userService.findByEmail("johnnyb@gmail.com"))
+                .thenReturn(user);
         when(jwtService.generateToken("johnnyb@gmail.com"))
                 .thenReturn("jwt-token");
 
@@ -135,11 +140,11 @@ public class AuthServiceTest {
 
         when(authenticationManager.authenticate(any()))
                 .thenReturn(null);
-        when(userRepository.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(Optional.empty());
+        when(userService.findByEmail("johnnyb@gmail.com"))
+                .thenThrow(new ResourceNotFoundException("User not found"));
 
         RuntimeException exception = assertThrows(
-                RuntimeException.class,
+                ResourceNotFoundException.class,
                 () -> authService.login(request)
         );
 

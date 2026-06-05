@@ -10,16 +10,16 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class DashboardService {
-    @Autowired
-    UserRepository userRepository;
 
     @Autowired
-    JobApplicationRepository jobApplicationRepository;
+    private JobApplicationRepository jobApplicationRepository;
+
+    @Autowired
+    private UserService userService;
 
 
     public DashboardResponse getDashboard(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.findByEmail(email);
 
         int totalApplications = jobApplicationRepository.countByUserId(user.getId());
         int appliedStatusTotal = jobApplicationRepository.countByUserIdAndStatus(

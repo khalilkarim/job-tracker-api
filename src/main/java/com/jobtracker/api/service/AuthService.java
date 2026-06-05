@@ -3,6 +3,7 @@ package com.jobtracker.api.service;
 import com.jobtracker.api.dto.AuthResponse;
 import com.jobtracker.api.dto.LoginRequest;
 import com.jobtracker.api.dto.RegisterRequest;
+import com.jobtracker.api.exception.EmailAlreadyExistsException;
 import com.jobtracker.api.model.User;
 import com.jobtracker.api.repository.UserRepository;
 import com.jobtracker.api.security.JwtService;
@@ -25,13 +26,15 @@ public class AuthService {
     private JwtService jwtService;
 
     @Autowired
+    private UserService userService;
+
+    @Autowired
     private AuthenticationManager authenticationManager;
 
     public AuthResponse register(RegisterRequest request) {
-        //check if email already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
-        }
+
+        userService.validateEmailNotTaken(request.getEmail());
+
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
@@ -53,8 +56,7 @@ public class AuthService {
                 )
         );
 
-        User user = userRepository.findByEmail(request.getEmail()).
-                orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.findByEmail(request.getEmail());
         String token = jwtService.generateToken(user.getEmail());
 
         return new AuthResponse(token, user.getEmail(), user.getName());

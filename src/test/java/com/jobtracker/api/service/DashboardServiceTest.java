@@ -1,6 +1,7 @@
 package com.jobtracker.api.service;
 
 import com.jobtracker.api.dto.DashboardResponse;
+import com.jobtracker.api.exception.ResourceNotFoundException;
 import com.jobtracker.api.model.ApplicationStatus;
 import com.jobtracker.api.model.User;
 import com.jobtracker.api.repository.JobApplicationRepository;
@@ -18,10 +19,13 @@ import static org.mockito.Mockito.*;
 public class DashboardServiceTest {
 
     @Mock
-    private JobApplicationRepository applicationRepository;
+    private ApplicationService applicationService;
 
     @Mock
-    private UserRepository userRepository;
+    JobApplicationRepository applicationRepository;
+
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private DashboardService dashboardService;
@@ -32,8 +36,8 @@ public class DashboardServiceTest {
         user.setId(1L);
         user.setEmail("johnnyb@gmail.com");
 
-        when(userRepository.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(Optional.of(user));
+        when(userService.findByEmail("johnnyb@gmail.com"))
+                .thenReturn(user);
         when(applicationRepository.countByUserId(1L))
                 .thenReturn(10);
         when(applicationRepository.countByUserIdAndStatus(1L, ApplicationStatus.APPLIED))
@@ -62,8 +66,8 @@ public class DashboardServiceTest {
         user.setId(1L);
         user.setEmail("johnnyb@gmail.com");
 
-        when(userRepository.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(Optional.of(user));
+        when(userService.findByEmail("johnnyb@gmail.com"))
+                .thenReturn(user);
         when(applicationRepository.countByUserId(1L))
                 .thenReturn(0);
         when(applicationRepository.countByUserIdAndStatus(any(), any()))
@@ -78,11 +82,11 @@ public class DashboardServiceTest {
 
     @Test
     public void getDashboard_withInvalidUser_throwsException() {
-        when(userRepository.findByEmail("johnnyb@gmail.com"))
-                .thenReturn(Optional.empty());
+        when(userService.findByEmail("johnnyb@gmail.com"))
+                .thenThrow(new ResourceNotFoundException("User not found"));
 
         RuntimeException exception = assertThrows(
-                RuntimeException.class,
+                ResourceNotFoundException.class,
                 () -> dashboardService.getDashboard("johnnyb@gmail.com")
         );
 
